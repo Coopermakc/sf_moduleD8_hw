@@ -1,6 +1,7 @@
 import django_heroku
 import os
 
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'please-set-secret-key-through-env')
@@ -92,3 +93,4 @@ def get_cache():
 
 
 CACHES = get_cache()
+

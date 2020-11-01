@@ -1,7 +1,8 @@
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import ListView
 from django.views.generic.detail import DetailView
-from tasks.models import TodoItem, Category
+from tasks.models import TodoItem, Category, PriorityHigh, PriorityLow, PriorityMedium
+from collections import Counter
 
 
 def index(request):
@@ -14,13 +15,17 @@ def index(request):
     # for t in Tag.objects.all()}
 
     # 3rd version
-    from django.db.models import Count
+    
+    counts = Category.objects.all().order_by("-todos_count")
+    counts = {c.name: c.todos_count for c in counts}
+    
+    priorities = {
+        'high': PriorityHigh.objects.first().count if PriorityHigh.objects.first() else 0,
+        'medium': PriorityMedium.objects.first().count if PriorityMedium.objects.first() else 0,
+        'low': PriorityLow.objects.first().count if PriorityLow.objects.first() else 0,
+    }
 
-    counts = Category.objects.annotate(total_tasks=Count(
-        'todoitem')).order_by("-total_tasks")
-    counts = {c.name: c.total_tasks for c in counts}
-
-    return render(request, "tasks/index.html", {"counts": counts})
+    return render(request, "tasks/index.html", {"counts": counts, "priorities": priorities})
 
 
 def filter_tasks(tags_by_task):
@@ -64,13 +69,14 @@ class TaskListView(ListView):
 
         user_tasks = self.get_queryset()
         tags = []
+        categories = []
         for t in user_tasks:
             tags.append(list(t.category.all()))
 
-        categories = []
-        for cat in t.category.all():
-            if cat not in categories:
-                categories.append(cat)
+           
+            for cat in t.category.all():
+                if cat not in categories:
+                    categories.append(cat)
         context["categories"] = categories
 
         return context
