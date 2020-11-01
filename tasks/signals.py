@@ -60,11 +60,11 @@ def task_priority_check(instance, **kwargs):
     try:
         old_priority= TodoItem.objects.get(pk=instance.pk).priority
         if old_priority != instance.priority:
-            if old_priority == 1:
+            if old_priority == instance.PRIORITY_HIGH:
                 priority = PriorityHigh.objects.first()
                 priority.count -= 1
                 priority.save()
-            elif old_priority == 2:
+            elif old_priority == instance.PRIORITY_MEDIUM:
                 priority = PriorityMedium.objects.first()
                 priority.count -= 1
                 priority.save()
