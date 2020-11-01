@@ -1,12 +1,10 @@
 {% extends "base.html" %}
-{% load cache %}
 
 
 
 {% block main_content %}
-{% cache  300 div%}
+
     <div>
         <p>Time {{ data.hours }} : {{ data.minutes }} : {{ data.seconds }}  Data {{ data.day }} . {{ data.month }} . {{ data.year }}</P>
     </div>
-{% endcache %}
 {% endblock %}

@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import ListView
 from django.views.generic.detail import DetailView
+from django.core.cache import cache
 from tasks.models import TodoItem, Category, PriorityHigh, PriorityLow, PriorityMedium
 from collections import Counter
 from datetime import datetime
@@ -96,4 +97,5 @@ def cached(request):
         'minutes': data.minute,
         'seconds': data.second,
     }
-    return render(request, 'tasks/cached.html', {'data': data_parsed})
+    cache.set('data', data_parsed, 60*5)
+    return render(request, 'tasks/cached.html', {'data': cache.get('data')})
