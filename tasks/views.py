@@ -3,7 +3,7 @@ from django.views.generic import ListView
 from django.views.generic.detail import DetailView
 from tasks.models import TodoItem, Category, PriorityHigh, PriorityLow, PriorityMedium
 from collections import Counter
-
+from datetime import datetime
 
 def index(request):
 
@@ -85,3 +85,15 @@ class TaskListView(ListView):
 class TaskDetailsView(DetailView):
     model = TodoItem
     template_name = "tasks/details.html"
+
+def cached(request):
+    data = datetime.now()
+    data_parsed = {
+        'year': data.year,
+        'month': data.month,
+        'day': data.day,
+        'hours': data.hour,
+        'minutes': data.minute,
+        'seconds': data.second,
+    }
+    return render(request, 'tasks/cached.html', {'data': data_parsed})
