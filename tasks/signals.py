@@ -2,31 +2,10 @@ from django.db.models.signals import m2m_changed, post_save, pre_save
 from django.dispatch import receiver
 from tasks.models import TodoItem, Category, PriorityLow, PriorityHigh, PriorityMedium
 from collections import Counter
-
-@receiver(m2m_changed, sender=TodoItem.category.through)
-def tasks_old_cat(sender, instance, action, model, **kwargs):
-    if action != "pre_save":
-        return
-    try:
-        old_categories = TodoItem.objects.get(pk=instance.pk).category.all()
-        
-        current_categories = instance.category.all()
-        if old_categories != current_categories:
-            for cat in old_categories:
-                if cat not in current_categories:
-                    slug = cat.slug
-
-                    new_count = 0
-
-                    for task in TodoItem.objects.all():
-                        new_count += task.category.filter(slug=slug).count()
-                    new_count -= 1
-                    Category.objects.filter(slug=slug).update(todos_count=new_count)
-
-    except TodoItem.DoesNotExist:
-        return
+from django.core.cache import cache
 
 
+    
 @receiver(m2m_changed, sender=TodoItem.category.through)
 def tasks_cats_added(sender, instance, action, model, **kwargs):
     if action !="post_add":
@@ -40,6 +19,19 @@ def tasks_cats_added(sender, instance, action, model, **kwargs):
             new_count += task.category.filter(slug=slug).count()
         
         Category.objects.filter(slug=slug).update(todos_count=new_count)
+    
+    current_categories = instance.category.all()
+    old_categories = cache.get('old_categories')
+    if old_categories != current_categories:
+        for cat in old_categories:
+            if cat not in current_categories:
+                slug = cat.slug
+
+                new_count = 0
+
+                for task in TodoItem.objects.all():
+                    new_count += task.category.filter(slug=slug).count()
+                Category.objects.filter(slug=slug).update(todos_count=new_count)
     
 
 @receiver(m2m_changed, sender=TodoItem.category.through)
@@ -56,9 +48,13 @@ def task_cat_removed(sender, instance, action, model, **kwargs):
         Category.objects.filter(slug=slug).update(todos_count=new_count)
 
 @receiver(pre_save, sender=TodoItem)
-def task_priority_check(instance, **kwargs):
+def task_priority_check(instance, sender, **kwargs):
     try:
-        old_priority= TodoItem.objects.get(pk=instance.pk).priority
+        previous_obj = TodoItem.objects.get(id=instance.id)
+        old_priority= previous_obj.priority
+        old_categories = previous_obj.category.all()
+        cache.set('old_prioriry', old_priority)
+        cache.set('old_categories', old_categories)
         if old_priority != instance.priority:
             if old_priority == instance.PRIORITY_HIGH:
                 priority = PriorityHigh.objects.first()
@@ -72,6 +68,7 @@ def task_priority_check(instance, **kwargs):
                 priority = PriorityLow.objects.first()
                 priority.count -= 1
                 priority.save()
+        
     except TodoItem.DoesNotExist:
         return
 
@@ -80,31 +77,29 @@ def task_priority_check(instance, **kwargs):
 
 @receiver(post_save, sender=TodoItem)
 def task_priority_add(instance, **kwargs):
-    
-    if instance.priority == 1:
-        priority, created = PriorityHigh.objects.get_or_create()
-        if created:
-            priority.count = 1
-        else:
-            priority.count +=1
-        priority.save()
+    old_priority = cache.get('old_prioriry')
+    if instance.priority != old_priority:
+        if instance.priority == instance.PRIORITY_HIGH:
+            priority, created = PriorityHigh.objects.get_or_create()
+            if created:
+                priority.count = 1
+            else:
+                priority.count +=1
+            priority.save()
 
-    if instance.priority == 2:
-        priority, created = PriorityMedium.objects.get_or_create()
-        if created:
-            priority.count = 1
-        else:
-            priority.count +=1
-        priority.save()  
+        if instance.priority == instance.PRIORITY_MEDIUM:
+            priority, created = PriorityMedium.objects.get_or_create()
+            if created:
+                priority.count = 1
+            else:
+                priority.count +=1
+            priority.save() 
+        
+        if instance.priority == instance.PRIORITY_LOW:
+            priority, created = PriorityLow.objects.get_or_create()
+            if created:
+                priority.count = 1
+            else:
+                priority.count +=1
+            priority.save()
     
-    if instance.priority == 3:
-        priority, created = PriorityLow.objects.get_or_create()
-        if created:
-            priority.count = 1
-        else:
-            priority.count +=1
-        priority.save() 
-    
-    
-
-
