@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import ListView
 from django.views.generic.detail import DetailView
-from django.core.cache import cache
+from django.views.decorators.cache import cache_page
 from tasks.models import TodoItem, Category, PriorityHigh, PriorityLow, PriorityMedium
 from collections import Counter
 from datetime import datetime
@@ -87,6 +87,8 @@ class TaskDetailsView(DetailView):
     model = TodoItem
     template_name = "tasks/details.html"
 
+
+@cache_page(60*3)
 def cached(request):
     data = datetime.now()
     data_parsed = {
@@ -97,5 +99,4 @@ def cached(request):
         'minutes': data.minute,
         'seconds': data.second,
     }
-    cache.set('data', data_parsed, 60*5)
-    return render(request, 'tasks/cached.html', {'data': cache.get('data')})
+    return render(request, 'tasks/cached.html', {'data': data_parsed})
