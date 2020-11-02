@@ -22,7 +22,8 @@ def tasks_cats_added(sender, instance, action, model, **kwargs):
     
     current_categories = instance.category.all()
     old_categories = cache.get('old_categories')
-    if old_categories != current_categories:
+    
+    if old_categories and old_categories != current_categories:
         for cat in old_categories:
             if cat not in current_categories:
                 slug = cat.slug
