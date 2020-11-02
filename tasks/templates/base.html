@@ -22,7 +22,7 @@
 
               <i class="fas fa-clipboard-list"></i>&nbsp;<a href="{% url "tasks:list" %}">задачи</a>
               <i class="fas fa-clipboard-list"></i>&nbsp;<a href="{% url "tasks:index" %}">главная</a>
-              
+              <i class="fas fa-clipboard-list"></i>&nbsp;<a href="{% url "tasks:cached" %}">Cache</a>
             {% endif %}
 	    <i class="fas fa-cog"></i>&nbsp;<a href='{% url 'admin:index' %}'>админка</a>
           {% endblock %}
